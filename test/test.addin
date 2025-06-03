@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>test - Command 1</Text>
+    <Description>Some description</Description>
+    <Assembly>test\test.dll</Assembly>
+    <FullClassName>test.Command1</FullClassName>
+    <ClientId>98671d77-ef59-4bdc-9039-20d9479ef0fa</ClientId>
+    <VendorId>com.YOUR COMPANY NAME</VendorId>
+    <VendorDescription>YOUR COMPANY NAME, YOUR COMPANY URL</VendorDescription>
+  </AddIn>
+  <AddIn Type="Command">
+    <Text>test - Command 2</Text>
+    <Description>Some description</Description>
+    <Assembly>test\test.dll</Assembly>
+    <FullClassName>test.Command2</FullClassName>
+    <ClientId>682cc47f-637f-4870-a6d1-ea56745d01ff</ClientId>
+    <VendorId>com.YOUR COMPANY NAME</VendorId>
+    <VendorDescription>YOUR COMPANY NAME, YOUR COMPANY URL</VendorDescription>
+  </AddIn>
+  <AddIn Type="Command">
+	  <Text>test - Command 3</Text>
+	  <Description>Some description</Description>
+	  <Assembly>test\test.dll</Assembly>
+	  <FullClassName>test.Command3</FullClassName>
+	  <ClientId>46D36924-2457-4350-8E15-CDBE77B193EB</ClientId>
+	  <VendorId>com.YOUR COMPANY NAME</VendorId>
+	  <VendorDescription>YOUR COMPANY NAME, YOUR COMPANY URL</VendorDescription>
+  </AddIn>
+  <AddIn Type="Application">
+    <Name>test</Name>
+    <Assembly>test\test.dll</Assembly>
+    <FullClassName>test.App</FullClassName>
+    <ClientId>b6ec69ff-985a-43f9-9165-5c955900f81a</ClientId>
+    <VendorId>com.YOUR COMPANY NAME</VendorId>
+    <VendorDescription>YOUR COMPANY NAME, YOUR COMPANY URL</VendorDescription>
+  </AddIn>
+</RevitAddIns>
