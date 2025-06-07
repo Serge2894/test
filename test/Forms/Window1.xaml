@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:test.Forms"
         mc:Ignorable="d"
-        Height="600" Width="400" MinWidth="400" MinHeight="600"
+        Height="600" Width="500" MinWidth="500" MinHeight="600"
         Background="#F5F5F5"
         WindowStyle="None" >
     <Window.Resources>
@@ -153,6 +153,7 @@
             <Button x:Name="btnCurtainwall" Content="Curtain Wall" Style="{StaticResource TabButtonStyle}" Tag="Selected" Height="25" Click="btnCurtainwall_Click"/>
             <Button x:Name="btnStair" Content="Stair" Style="{StaticResource TabButtonStyle}" Height="25" Click="btnStair_Click" />
             <Button x:Name="btnRailling" Content="Railling" Style="{StaticResource TabButtonStyle}" Height="25" Click="btnRailling_Click" />
+            <Button x:Name="btnMEPInsulation" Content="MEP Insulation" Style="{StaticResource TabButtonStyle}" Height="25" Click="btnMEPInsulation_Click" />
             <Button x:Name="btnNestedFamilies" Content="Nested Families" Style="{StaticResource TabButtonStyle}" Height="25" Click="btnNestedFamilies_Click" />
         </StackPanel>
 
@@ -440,7 +441,102 @@
             </Border>
         </Grid>
 
-        <!-- New Nested Families Content with horizontal layout -->
+        <!-- New MEP Insulation Content -->
+        <Grid Grid.Row="3" x:Name="MEPInsulationContent" Grid.ColumnSpan="2">
+            <Border Grid.Row="3" Background="#FFFFFF" CornerRadius="5" Grid.ColumnSpan="2" Margin="0,0,0,0">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Label Content="Select Component/s" Grid.Row="0"/>
+                    <StackPanel Grid.Row="1" Margin="0,0,0,10" Orientation="Horizontal">
+                        <CheckBox x:Name="cbxPipeInsulation" Content="Pipe Insulation" IsChecked="True" Margin="0,2,10,2"/>
+                        <CheckBox x:Name="cbxDuctInsulation" Content="Duct Insulation" IsChecked="True" Margin="0,2"/>
+                    </StackPanel>
+
+                    <Label Content="Select Parameters:" Grid.Row="2"/>
+                    <Grid Grid.Row="3" Margin="0,0,0,10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBox x:Name="txtMEPInsulationParameterSearch" 
+                                 Grid.Row="0"
+                                 Margin="0,0,0,5"
+                                 Padding="5,3"                     
+                                 TextChanged="txtMEPInsulationParameterSearch_TextChanged"
+                                 GotFocus="txtMEPInsulationParameterSearch_GotFocus"
+                                 LostFocus="txtMEPInsulationParameterSearch_LostFocus"
+                                 Text="Search parameters...">
+                            <TextBox.Resources>
+                                <Style TargetType="{x:Type TextBox}">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type TextBox}">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="5">
+                                                    <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+
+                        <Border Grid.Row="1" 
+                                BorderThickness="1" 
+                                BorderBrush="#CCCCCC" 
+                                Background="White"
+                                CornerRadius="5"
+                                Margin="0,5,0,0">
+                            <ListView x:Name="lvMEPInsulationParameters" 
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                      SelectionMode="Extended">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                                                     Content="{Binding ParameterName}"
+                                                     Margin="2"
+                                                     FontWeight="{Binding FontWeight}"
+                                                     Foreground="{Binding TextColor}"
+                                                     Checked="MEPInsulationParameterCheckBox_Changed"
+                                                     Unchecked="MEPInsulationParameterCheckBox_Changed"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                        <Button x:Name="btnMEPInsulation_OK"
+                                Content="OK"
+                                Margin="0,0,10,0"
+                                Style="{StaticResource OKButtonStyle}"
+                                Click="btnOK_Click"/>
+                        <Button x:Name="btnMEPInsulation_Cancel"
+                                Content="Cancel"
+                                Style="{StaticResource CancelButtonStyle}"
+                                Click="btnCancel_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Nested Families Content with horizontal layout -->
         <Grid Grid.Row="3" x:Name="NestedFamiliesContent" Grid.ColumnSpan="2">
             <Border Grid.Row="3" Background="#FFFFFF" CornerRadius="5" Grid.ColumnSpan="2" Margin="0,0,0,0">
                 <Grid Margin="15">

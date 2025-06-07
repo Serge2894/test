@@ -1,4 +1,6 @@
 ﻿using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
 using test.Common;
 using test.Forms;
 
@@ -17,8 +19,8 @@ namespace test
             // step 2: open form and pass the parameters
             Window1 currentForm = new Window1(doc)
             {
-                Width = 300,
-                Height = 280,
+                Width = 500,
+                Height = 600,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
                 Topmost = true,
             };
@@ -36,6 +38,7 @@ namespace test
             List<string> selectedCurtainWallParamNames = currentForm.SelectedCurtainWallParameterNames;
             List<string> selectedStairParamNames = currentForm.SelectedStairParameterNames;
             List<string> selectedRailingParamNames = currentForm.SelectedRailingParameterNames;
+            List<string> selectedMEPInsulationParamNames = currentForm.SelectedMEPInsulationParameterNames;
             List<string> selectedNestedFamilyParamNames = currentForm.SelectedNestedFamilyParameterNames;
             List<string> selectedNestedFamilyNames = currentForm.SelectedNestedFamilyNames;
             string selectedParentFamilyName = currentForm.SelectedParentFamilyName;
@@ -48,6 +51,8 @@ namespace test
             bool copyToTopRail = currentForm.IsTopRailChecked;
             bool copyToHandrail = currentForm.IsHandrailChecked;
             bool copyToRailSupport = currentForm.IsRailSupportChecked;
+            bool copyToPipeInsulation = currentForm.IsPipeInsulationChecked;
+            bool copyToDuctInsulation = currentForm.IsDuctInsulationChecked;
 
             bool operationCompleted = false;
 
@@ -375,6 +380,119 @@ namespace test
                     operationCompleted = true;
                 }
             }
+            else if (currentForm.MEPInsulationContent.Visibility == System.Windows.Visibility.Visible)
+            {
+                // Check for Pipes and Ducts first
+                FilteredElementCollector pipeCollector = new FilteredElementCollector(doc);
+                FilteredElementCollector ductCollector = new FilteredElementCollector(doc);
+
+                if (!entireModelScope)
+                {
+                    pipeCollector = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                    ductCollector = new FilteredElementCollector(doc, doc.ActiveView.Id);
+                }
+
+                List<Pipe> pipes = pipeCollector
+                    .OfClass(typeof(Pipe))
+                    .Cast<Pipe>()
+                    .ToList();
+
+                List<Duct> ducts = ductCollector
+                    .OfClass(typeof(Duct))
+                    .Cast<Duct>()
+                    .ToList();
+
+                if (!pipes.Any() && !ducts.Any())
+                {
+                    // No elements found - show InfoDialog
+                    InfoDialog infoDialog = new InfoDialog($"No Pipes or Ducts found in the {(entireModelScope ? "Entire Model" : "Current View")}.")
+                    {
+                        WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
+                        Topmost = true
+                    };
+                    infoDialog.ShowDialog();
+                    return Result.Succeeded;
+                }
+
+                // Elements exist, check if parameters are selected
+                if (!selectedMEPInsulationParamNames.Any())
+                {
+                    NoParameterDialog noParameterDialog = new NoParameterDialog()
+                    {
+                        WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
+                        Topmost = true
+                    };
+                    noParameterDialog.ShowDialog();
+                    return Result.Succeeded;
+                }
+
+                // Elements exist and parameters selected - perform operation
+                using (Transaction t = new Transaction(doc, $"Copy Selected Parameters to MEP Insulation Elements"))
+                {
+                    t.Start();
+
+                    // Process pipes if selected
+                    if (copyToPipeInsulation)
+                    {
+                        foreach (Pipe pipe in pipes)
+                        {
+                            // Process each selected parameter
+                            foreach (string selectedMEPParamName in selectedMEPInsulationParamNames)
+                            {
+                                // Get parameter value from pipe (either instance or type)
+                                string parameterValue = Utils.GetParameterValueFromElementOrType(pipe, selectedMEPParamName);
+
+                                if (!string.IsNullOrEmpty(parameterValue))
+                                {
+                                    // Get pipe insulation
+                                    List<Element> pipeInsulations = GetPipeInsulation(doc, pipe);
+
+                                    foreach (Element insulation in pipeInsulations)
+                                    {
+                                        Utils.SetParameterValueString(insulation, selectedMEPParamName, parameterValue);
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.Print($"Parameter '{selectedMEPParamName}' not found or has no value on pipe {pipe.Id}");
+                                }
+                            }
+                        }
+                    }
+
+                    // Process ducts if selected
+                    if (copyToDuctInsulation)
+                    {
+                        foreach (Duct duct in ducts)
+                        {
+                            // Process each selected parameter
+                            foreach (string selectedMEPParamName in selectedMEPInsulationParamNames)
+                            {
+                                // Get parameter value from duct (either instance or type)
+                                string parameterValue = Utils.GetParameterValueFromElementOrType(duct, selectedMEPParamName);
+
+                                if (!string.IsNullOrEmpty(parameterValue))
+                                {
+                                    // Get duct insulation
+                                    List<Element> ductInsulations = GetDuctInsulation(doc, duct);
+
+                                    foreach (Element insulation in ductInsulations)
+                                    {
+                                        Utils.SetParameterValueString(insulation, selectedMEPParamName, parameterValue);
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.Print($"Parameter '{selectedMEPParamName}' not found or has no value on duct {duct.Id}");
+                                }
+                            }
+                        }
+                    }
+
+                    t.Commit();
+                    operationCompleted = true;
+                }
+            }
             else if (currentForm.NestedFamiliesContent.Visibility == System.Windows.Visibility.Visible)
             {
                 // Check for Nested Families first - find families with nested families in the model/view
@@ -501,6 +619,132 @@ namespace test
 
             return Result.Succeeded;
         }
+
+        // Helper methods for MEP Insulation
+        private static List<Element> GetPipeInsulation(Document doc, Pipe pipe)
+        {
+            List<Element> insulationElements = new List<Element>();
+
+            try
+            {
+                // Get pipe insulation by finding elements in the Pipe Insulation category
+                FilteredElementCollector collector = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_PipeInsulations)
+                    .WhereElementIsNotElementType();
+
+                // Get pipe location for spatial comparison
+                LocationCurve pipeLocation = pipe.Location as LocationCurve;
+                if (pipeLocation == null) return insulationElements;
+
+                XYZ pipeStart = pipeLocation.Curve.GetEndPoint(0);
+                XYZ pipeEnd = pipeLocation.Curve.GetEndPoint(1);
+                XYZ pipeMidpoint = (pipeStart + pipeEnd) / 2;
+
+                foreach (Element insulation in collector)
+                {
+                    // Check if this insulation is spatially close to our pipe
+                    BoundingBoxXYZ insulationBB = insulation.get_BoundingBox(null);
+                    if (insulationBB != null)
+                    {
+                        XYZ insulationCenter = (insulationBB.Min + insulationBB.Max) / 2;
+                        double distance = pipeMidpoint.DistanceTo(insulationCenter);
+
+                        // If insulation is within reasonable distance (adjust as needed)
+                        if (distance < 5.0) // 5 feet tolerance
+                        {
+                            // Additional check: see if insulation parameters reference the pipe
+                            foreach (Parameter param in insulation.Parameters)
+                            {
+                                if (param.StorageType == StorageType.ElementId)
+                                {
+                                    ElementId refId = param.AsElementId();
+                                    if (refId == pipe.Id)
+                                    {
+                                        insulationElements.Add(insulation);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // If no direct reference found but spatially close, include it
+                            if (!insulationElements.Contains(insulation) && distance < 1.0) // 1 foot for very close
+                            {
+                                insulationElements.Add(insulation);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"Error getting pipe insulation for pipe {pipe.Id}: {ex.Message}");
+            }
+
+            return insulationElements;
+        }
+
+        private static List<Element> GetDuctInsulation(Document doc, Duct duct)
+        {
+            List<Element> insulationElements = new List<Element>();
+
+            try
+            {
+                // Get duct insulation by finding elements in the Duct Insulation category
+                FilteredElementCollector collector = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_DuctInsulations)
+                    .WhereElementIsNotElementType();
+
+                // Get duct location for spatial comparison
+                LocationCurve ductLocation = duct.Location as LocationCurve;
+                if (ductLocation == null) return insulationElements;
+
+                XYZ ductStart = ductLocation.Curve.GetEndPoint(0);
+                XYZ ductEnd = ductLocation.Curve.GetEndPoint(1);
+                XYZ ductMidpoint = (ductStart + ductEnd) / 2;
+
+                foreach (Element insulation in collector)
+                {
+                    // Check if this insulation is spatially close to our duct
+                    BoundingBoxXYZ insulationBB = insulation.get_BoundingBox(null);
+                    if (insulationBB != null)
+                    {
+                        XYZ insulationCenter = (insulationBB.Min + insulationBB.Max) / 2;
+                        double distance = ductMidpoint.DistanceTo(insulationCenter);
+
+                        // If insulation is within reasonable distance (adjust as needed)
+                        if (distance < 5.0) // 5 feet tolerance
+                        {
+                            // Additional check: see if insulation parameters reference the duct
+                            foreach (Parameter param in insulation.Parameters)
+                            {
+                                if (param.StorageType == StorageType.ElementId)
+                                {
+                                    ElementId refId = param.AsElementId();
+                                    if (refId == duct.Id)
+                                    {
+                                        insulationElements.Add(insulation);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // If no direct reference found but spatially close, include it
+                            if (!insulationElements.Contains(insulation) && distance < 1.0) // 1 foot for very close
+                            {
+                                insulationElements.Add(insulation);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"Error getting duct insulation for duct {duct.Id}: {ex.Message}");
+            }
+
+            return insulationElements;
+        }
+
         internal static PushButtonData GetButtonData()
         {
             // use this method to define the properties for this command in the Revit ribbon

@@ -1,4 +1,6 @@
 ﻿using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -68,6 +70,18 @@ namespace test.Forms
             }
         }
 
+        // MEP Insulation properties
+        private ObservableCollection<ParameterItem> _mepInsulationParameterItems;
+        public ObservableCollection<ParameterItem> MEPInsulationParameterItems
+        {
+            get { return _mepInsulationParameterItems; }
+            set
+            {
+                _mepInsulationParameterItems = value;
+                OnPropertyChanged(nameof(MEPInsulationParameterItems));
+            }
+        }
+
         // New properties for Nested Families
         private ObservableCollection<FamilyItem> _parentFamilyItems;
         public ObservableCollection<FamilyItem> ParentFamilyItems
@@ -133,6 +147,7 @@ namespace test.Forms
             StairParameterItems = new ObservableCollection<ParameterItem>();
             RaillingParameters = new List<Parameter>();
             RaillingParameterItems = new ObservableCollection<ParameterItem>();
+            MEPInsulationParameterItems = new ObservableCollection<ParameterItem>();
 
             // Initialize nested families collections
             ParentFamilyItems = new ObservableCollection<FamilyItem>();
@@ -194,6 +209,19 @@ namespace test.Forms
             // ResizeWindowToVerticalAsync();
         }
 
+        private void btnMEPInsulation_Click(object sender, RoutedEventArgs e)
+        {
+            ShowMEPInsulationContent();
+            SetTabSelection("MEPInsulation");
+            LoadMEPInsulationParameters();
+
+            // Force change to vertical layout
+            ResizeWindowToVertical();
+
+            // Alternative: Use async version if above doesn't work
+            // ResizeWindowToVerticalAsync();
+        }
+
         private void btnNestedFamilies_Click(object sender, RoutedEventArgs e)
         {
             ShowNestedFamiliesContent();
@@ -214,6 +242,7 @@ namespace test.Forms
             btnCurtainwall.Tag = null;
             btnStair.Tag = null;
             btnRailling.Tag = null;
+            btnMEPInsulation.Tag = null;
             btnNestedFamilies.Tag = null;
 
             // Set selected tab
@@ -227,6 +256,9 @@ namespace test.Forms
                     break;
                 case "Railing":
                     btnRailling.Tag = "Selected";
+                    break;
+                case "MEPInsulation":
+                    btnMEPInsulation.Tag = "Selected";
                     break;
                 case "NestedFamilies":
                     btnNestedFamilies.Tag = "Selected";
@@ -256,14 +288,14 @@ namespace test.Forms
             this.MaxHeight = double.PositiveInfinity;
 
             // Force the size change
-            this.Width = 400;
+            this.Width = 500;
             this.Height = 600;
 
             // Apply layout updates immediately
             this.UpdateLayout();
 
             // Set new constraints after size change
-            this.MinWidth = 400;
+            this.MinWidth = 500;
             this.MinHeight = 600;
 
             // Restore position or center on first load
@@ -347,14 +379,14 @@ namespace test.Forms
                 this.MaxHeight = double.PositiveInfinity;
 
                 // Set new size
-                this.Width = 400;
+                this.Width = 500;
                 this.Height = 600;
 
                 // Update layout
                 this.UpdateLayout();
 
                 // Set constraints
-                this.MinWidth = 400;
+                this.MinWidth = 500;
                 this.MinHeight = 600;
 
                 // Handle positioning
@@ -499,6 +531,7 @@ namespace test.Forms
             CurtainwallContent.Visibility = System.Windows.Visibility.Visible;
             StairContent.Visibility = System.Windows.Visibility.Collapsed;
             RaillingContent.Visibility = System.Windows.Visibility.Collapsed;
+            MEPInsulationContent.Visibility = System.Windows.Visibility.Collapsed;
             NestedFamiliesContent.Visibility = System.Windows.Visibility.Collapsed;
         }
 
@@ -507,6 +540,7 @@ namespace test.Forms
             CurtainwallContent.Visibility = System.Windows.Visibility.Collapsed;
             StairContent.Visibility = System.Windows.Visibility.Visible;
             RaillingContent.Visibility = System.Windows.Visibility.Collapsed;
+            MEPInsulationContent.Visibility = System.Windows.Visibility.Collapsed;
             NestedFamiliesContent.Visibility = System.Windows.Visibility.Collapsed;
         }
 
@@ -515,6 +549,16 @@ namespace test.Forms
             CurtainwallContent.Visibility = System.Windows.Visibility.Collapsed;
             StairContent.Visibility = System.Windows.Visibility.Collapsed;
             RaillingContent.Visibility = System.Windows.Visibility.Visible;
+            MEPInsulationContent.Visibility = System.Windows.Visibility.Collapsed;
+            NestedFamiliesContent.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
+        private void ShowMEPInsulationContent()
+        {
+            CurtainwallContent.Visibility = System.Windows.Visibility.Collapsed;
+            StairContent.Visibility = System.Windows.Visibility.Collapsed;
+            RaillingContent.Visibility = System.Windows.Visibility.Collapsed;
+            MEPInsulationContent.Visibility = System.Windows.Visibility.Visible;
             NestedFamiliesContent.Visibility = System.Windows.Visibility.Collapsed;
         }
 
@@ -523,6 +567,7 @@ namespace test.Forms
             CurtainwallContent.Visibility = System.Windows.Visibility.Collapsed;
             StairContent.Visibility = System.Windows.Visibility.Collapsed;
             RaillingContent.Visibility = System.Windows.Visibility.Collapsed;
+            MEPInsulationContent.Visibility = System.Windows.Visibility.Collapsed;
             NestedFamiliesContent.Visibility = System.Windows.Visibility.Visible;
         }
 
@@ -547,6 +592,12 @@ namespace test.Forms
                 if (!ValidateRailingTab())
                     return;
             }
+            else if (MEPInsulationContent.Visibility == System.Windows.Visibility.Visible)
+            {
+                // MEP Insulation tab validation
+                if (!ValidateMEPInsulationTab())
+                    return;
+            }
             else if (NestedFamiliesContent.Visibility == System.Windows.Visibility.Visible)
             {
                 // Nested Families tab validation
@@ -558,6 +609,7 @@ namespace test.Forms
             OnPropertyChanged(nameof(SelectedCurtainWallParameterNames));
             OnPropertyChanged(nameof(SelectedStairParameterNames));
             OnPropertyChanged(nameof(SelectedRailingParameterNames));
+            OnPropertyChanged(nameof(SelectedMEPInsulationParameterNames));
             OnPropertyChanged(nameof(SelectedNestedFamilyParameterNames));
             OnPropertyChanged(nameof(SelectedNestedFamilyNames));
 
@@ -570,6 +622,7 @@ namespace test.Forms
             DialogResult = false;
             this.Close();
         }
+
         private bool ValidateCurtainWallTab()
         {
             // Check if curtain walls exist in the scope first
@@ -646,6 +699,36 @@ namespace test.Forms
 
             // Check if parameters are selected
             if (!SelectedRailingParameterNames.Any())
+            {
+                ShowInfoDialog("No parameter selected.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidateMEPInsulationTab()
+        {
+            // Check if pipes or ducts exist in the scope first
+            List<Pipe> pipes = GetPipeInstances();
+            List<Duct> ducts = GetDuctInstances();
+
+            if (!pipes.Any() && !ducts.Any())
+            {
+                string scope = IsEntireModelChecked ? "Entire Model" : "Current View";
+                ShowInfoDialog($"No Pipes or Ducts found in the {scope}.");
+                return false;
+            }
+
+            // Check if no components are selected
+            if (!IsPipeInsulationChecked && !IsDuctInsulationChecked)
+            {
+                ShowInfoDialog("No Component/s is selected.");
+                return false;
+            }
+
+            // Check if parameters are selected
+            if (!SelectedMEPInsulationParameterNames.Any())
             {
                 ShowInfoDialog("No parameter selected.");
                 return false;
@@ -1380,7 +1463,7 @@ namespace test.Forms
                 }
                 else
                 {
-                    textBox.Text = $"{selectedItems.Count} parameters selected";
+                    txtNestedFamilyParameterSearch.Text = $"{selectedItems.Count} parameters selected";
                 }
 
                 lvNestedFamilyParameters.ItemsSource = NestedFamilyParameterItems;
@@ -1388,6 +1471,7 @@ namespace test.Forms
         }
 
         #endregion
+
         private void LoadCurtainWallParameters()
         {
             List<Wall> curCurtainWalls = GetCurtainWallInstances();
@@ -1568,6 +1652,235 @@ namespace test.Forms
             txtRaillingParameterSearch.Text = "Search parameters...";
         }
 
+        private void LoadMEPInsulationParameters()
+        {
+            List<Pipe> pipes = GetPipeInstances();
+            List<Duct> ducts = GetDuctInstances();
+            List<Parameter> commonParameters = new List<Parameter>();
+
+            // Get all pipe and pipe insulation parameters if pipe insulation is available
+            if (pipes.Any())
+            {
+                // Get all pipe insulation elements
+                FilteredElementCollector pipeInsulationCollector = IsEntireModelChecked ?
+                    new FilteredElementCollector(_doc) :
+                    new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+
+                var pipeInsulations = pipeInsulationCollector
+                    .OfCategory(BuiltInCategory.OST_PipeInsulations)
+                    .WhereElementIsNotElementType()
+                    .ToList();
+
+                if (pipeInsulations.Any())
+                {
+                    // Get parameters from pipes
+                    List<Parameter> pipeParameters = new List<Parameter>();
+                    foreach (Pipe pipe in pipes.Take(5)) // Sample first 5 pipes
+                    {
+                        // Get instance parameters
+                        pipeParameters.AddRange(Utils.GetAllParmatersFromElement(pipe));
+
+                        // Get type parameters
+                        ElementId typeId = pipe.GetTypeId();
+                        if (typeId != ElementId.InvalidElementId)
+                        {
+                            Element pipeType = _doc.GetElement(typeId);
+                            if (pipeType != null)
+                            {
+                                pipeParameters.AddRange(Utils.GetAllParmatersFromElement(pipeType));
+                            }
+                        }
+                    }
+
+                    // Get parameters from pipe insulation
+                    List<Parameter> pipeInsulationParameters = new List<Parameter>();
+                    foreach (Element insulation in pipeInsulations.Take(5)) // Sample first 5 insulations
+                    {
+                        // Get instance parameters
+                        pipeInsulationParameters.AddRange(Utils.GetAllParmatersFromElement(insulation));
+
+                        // Get type parameters
+                        ElementId typeId = insulation.GetTypeId();
+                        if (typeId != ElementId.InvalidElementId)
+                        {
+                            Element insulationType = _doc.GetElement(typeId);
+                            if (insulationType != null)
+                            {
+                                pipeInsulationParameters.AddRange(Utils.GetAllParmatersFromElement(insulationType));
+                            }
+                        }
+                    }
+
+                    // Find common parameters between pipes and pipe insulation
+                    var pipeParamNames = pipeParameters
+                        .Where(p => !p.IsReadOnly)
+                        .Select(p => p.Definition.Name)
+                        .ToHashSet();
+
+                    var pipeInsulationParamNames = pipeInsulationParameters
+                        .Where(p => !p.IsReadOnly)
+                        .Select(p => p.Definition.Name)
+                        .ToHashSet();
+
+                    var commonPipeParamNames = pipeParamNames.Intersect(pipeInsulationParamNames).ToHashSet();
+
+                    // Add common pipe parameters to the list
+                    foreach (Parameter param in pipeParameters.Where(p => commonPipeParamNames.Contains(p.Definition.Name)))
+                    {
+                        if (!commonParameters.Any(cp => cp.Definition.Name == param.Definition.Name))
+                        {
+                            commonParameters.Add(param);
+                        }
+                    }
+                }
+            }
+
+            // Get all duct and duct insulation parameters if duct insulation is available
+            if (ducts.Any())
+            {
+                // Get all duct insulation elements
+                FilteredElementCollector ductInsulationCollector = IsEntireModelChecked ?
+                    new FilteredElementCollector(_doc) :
+                    new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+
+                var ductInsulations = ductInsulationCollector
+                    .OfCategory(BuiltInCategory.OST_DuctInsulations)
+                    .WhereElementIsNotElementType()
+                    .ToList();
+
+                if (ductInsulations.Any())
+                {
+                    // Get parameters from ducts
+                    List<Parameter> ductParameters = new List<Parameter>();
+                    foreach (Duct duct in ducts.Take(5)) // Sample first 5 ducts
+                    {
+                        // Get instance parameters
+                        ductParameters.AddRange(Utils.GetAllParmatersFromElement(duct));
+
+                        // Get type parameters
+                        ElementId typeId = duct.GetTypeId();
+                        if (typeId != ElementId.InvalidElementId)
+                        {
+                            Element ductType = _doc.GetElement(typeId);
+                            if (ductType != null)
+                            {
+                                ductParameters.AddRange(Utils.GetAllParmatersFromElement(ductType));
+                            }
+                        }
+                    }
+
+                    // Get parameters from duct insulation
+                    List<Parameter> ductInsulationParameters = new List<Parameter>();
+                    foreach (Element insulation in ductInsulations.Take(5)) // Sample first 5 insulations
+                    {
+                        // Get instance parameters
+                        ductInsulationParameters.AddRange(Utils.GetAllParmatersFromElement(insulation));
+
+                        // Get type parameters
+                        ElementId typeId = insulation.GetTypeId();
+                        if (typeId != ElementId.InvalidElementId)
+                        {
+                            Element insulationType = _doc.GetElement(typeId);
+                            if (insulationType != null)
+                            {
+                                ductInsulationParameters.AddRange(Utils.GetAllParmatersFromElement(insulationType));
+                            }
+                        }
+                    }
+
+                    // Find common parameters between ducts and duct insulation
+                    var ductParamNames = ductParameters
+                        .Where(p => !p.IsReadOnly)
+                        .Select(p => p.Definition.Name)
+                        .ToHashSet();
+
+                    var ductInsulationParamNames = ductInsulationParameters
+                        .Where(p => !p.IsReadOnly)
+                        .Select(p => p.Definition.Name)
+                        .ToHashSet();
+
+                    var commonDuctParamNames = ductParamNames.Intersect(ductInsulationParamNames).ToHashSet();
+
+                    // Add common duct parameters to the list
+                    foreach (Parameter param in ductParameters.Where(p => commonDuctParamNames.Contains(p.Definition.Name)))
+                    {
+                        if (!commonParameters.Any(cp => cp.Definition.Name == param.Definition.Name))
+                        {
+                            commonParameters.Add(param);
+                        }
+                    }
+                }
+            }
+
+            // List of parameter names to exclude (commonly read-only or system parameters)
+            HashSet<string> excludedParameters = new HashSet<string>
+            {
+                "Family and Type",
+                "Family",
+                "Type",
+                "Phase Created",
+                "Phase Demolished",
+                "Element ID",
+                "Unique ID",
+                "Host ID",
+                "Level",
+                "Reference Level",
+                "Offset",
+                "Start Offset",
+                "End Offset",
+                "Length",
+                "System Type",
+                "System Name",
+                "Connector ID",
+                "Connected Elements",
+                "Flow",
+                "Pressure Drop",
+                "Velocity",
+                "Reynolds Number",
+                "Friction",
+                "Flow State",
+                "Size",
+                "Diameter",
+                "Width",
+                "Height",
+                "Hydraulic Diameter",
+                "Cross-Sectional Area",
+                "Perimeter",
+                "Volume",
+                "Center Elevation"
+            };
+
+            // Filter out excluded parameters and ensure they're writable
+            List<Parameter> filteredParameters = commonParameters
+                .Where(p => !p.IsReadOnly &&
+                           !excludedParameters.Contains(p.Definition.Name) &&
+                           (p.StorageType == StorageType.String ||
+                            p.StorageType == StorageType.Double ||
+                            p.StorageType == StorageType.Integer))
+                .GroupBy(p => p.Definition.Name)
+                .Select(g => g.First())
+                .OrderBy(p => p.Definition.Name)
+                .ToList();
+
+            // Create ParameterItems for the ListView
+            MEPInsulationParameterItems.Clear();
+
+            // Add "Select All" option as the first item
+            MEPInsulationParameterItems.Add(new ParameterItem("Select All Parameters", true));
+
+            // Add individual parameters
+            foreach (Parameter param in filteredParameters)
+            {
+                MEPInsulationParameterItems.Add(new ParameterItem(param));
+            }
+
+            // Set the ListView's ItemsSource
+            lvMEPInsulationParameters.ItemsSource = MEPInsulationParameterItems;
+
+            // Initialize search box with placeholder text
+            txtMEPInsulationParameterSearch.Text = "Search parameters...";
+        }
+
         private List<Wall> GetCurtainWallInstances()
         {
             FilteredElementCollector collector;
@@ -1653,6 +1966,60 @@ namespace test.Forms
             return collector
                 .Cast<Railing>()
                 .ToList();
+        }
+
+        private List<Pipe> GetPipeInstances()
+        {
+            FilteredElementCollector collector;
+            if (IsEntireModelChecked == true)
+            {
+                collector = new FilteredElementCollector(_doc)
+                    .OfClass(typeof(Pipe))
+                    .WhereElementIsNotElementType();
+
+                return collector
+                    .Cast<Pipe>()
+                    .ToList();
+            }
+            else
+            {
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+            }
+
+            List<Pipe> pipeInstances = collector
+                .OfClass(typeof(Pipe))
+                .WhereElementIsNotElementType()
+                .Cast<Pipe>()
+                .ToList();
+
+            return pipeInstances;
+        }
+
+        private List<Duct> GetDuctInstances()
+        {
+            FilteredElementCollector collector;
+            if (IsEntireModelChecked == true)
+            {
+                collector = new FilteredElementCollector(_doc)
+                    .OfClass(typeof(Duct))
+                    .WhereElementIsNotElementType();
+
+                return collector
+                    .Cast<Duct>()
+                    .ToList();
+            }
+            else
+            {
+                collector = new FilteredElementCollector(_doc, _doc.ActiveView.Id);
+            }
+
+            List<Duct> ductInstances = collector
+                .OfClass(typeof(Duct))
+                .WhereElementIsNotElementType()
+                .Cast<Duct>()
+                .ToList();
+
+            return ductInstances;
         }
 
         // This event handler will be called when the MouseDown event occurs on the Border
@@ -2064,6 +2431,138 @@ namespace test.Forms
             }
         }
 
+        // Event handlers for MEP Insulation parameters
+        private void MEPInsulationParameterCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.CheckBox checkBox && checkBox.DataContext is ParameterItem paramItem)
+            {
+                if (paramItem.IsSelectAll)
+                {
+                    // Handle "Select All" checkbox
+                    bool isChecked = checkBox.IsChecked == true;
+                    foreach (ParameterItem item in MEPInsulationParameterItems)
+                    {
+                        if (!item.IsSelectAll)
+                        {
+                            item.IsSelected = isChecked;
+                        }
+                    }
+                }
+                else
+                {
+                    // Handle individual parameter checkbox
+                    UpdateMEPInsulationSelectAllCheckboxState();
+                }
+
+                UpdateMEPInsulationSearchTextBox();
+            }
+        }
+
+        private void UpdateMEPInsulationSelectAllCheckboxState()
+        {
+            var selectAllItem = MEPInsulationParameterItems.FirstOrDefault(item => item.IsSelectAll);
+            if (selectAllItem != null)
+            {
+                var parameterItems = MEPInsulationParameterItems.Where(item => !item.IsSelectAll).ToList();
+                int selectedCount = parameterItems.Count(item => item.IsSelected);
+                int totalCount = parameterItems.Count;
+
+                if (selectedCount == 0)
+                {
+                    selectAllItem.IsSelected = false;
+                }
+                else if (selectedCount == totalCount)
+                {
+                    selectAllItem.IsSelected = true;
+                }
+            }
+        }
+
+        private void UpdateMEPInsulationSearchTextBox()
+        {
+            var selectedItems = MEPInsulationParameterItems.Where(item => item.IsSelected && !item.IsSelectAll).ToList();
+
+            if (selectedItems.Count == 0)
+            {
+                txtMEPInsulationParameterSearch.Text = "Search parameters...";
+            }
+            else if (selectedItems.Count == 1)
+            {
+                txtMEPInsulationParameterSearch.Text = selectedItems.First().ParameterName;
+            }
+            else
+            {
+                txtMEPInsulationParameterSearch.Text = $"{selectedItems.Count} parameters selected";
+            }
+        }
+
+        // MEP Insulation search functionality
+        private void txtMEPInsulationParameterSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            System.Windows.Controls.TextBox textBox = sender as System.Windows.Controls.TextBox;
+            if (textBox != null && textBox.IsFocused)
+            {
+                string searchText = textBox.Text.ToLower();
+
+                if (searchText == "search parameters...")
+                    return;
+
+                List<ParameterItem> filteredItems;
+
+                if (string.IsNullOrWhiteSpace(searchText))
+                {
+                    filteredItems = MEPInsulationParameterItems.ToList();
+                }
+                else
+                {
+                    filteredItems = MEPInsulationParameterItems
+                        .Where(p => p.IsSelectAll || p.ParameterName.ToLower().Contains(searchText))
+                        .ToList();
+                }
+
+                ObservableCollection<ParameterItem> filteredCollection = new ObservableCollection<ParameterItem>();
+                foreach (var item in filteredItems)
+                {
+                    filteredCollection.Add(item);
+                }
+
+                lvMEPInsulationParameters.ItemsSource = filteredCollection;
+            }
+        }
+
+        private void txtMEPInsulationParameterSearch_GotFocus(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Controls.TextBox textBox = sender as System.Windows.Controls.TextBox;
+            if (textBox != null && textBox.Text == "Search parameters...")
+            {
+                textBox.Text = "";
+            }
+        }
+
+        private void txtMEPInsulationParameterSearch_LostFocus(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Controls.TextBox textBox = sender as System.Windows.Controls.TextBox;
+            if (textBox != null && string.IsNullOrWhiteSpace(textBox.Text))
+            {
+                var selectedItems = MEPInsulationParameterItems.Where(item => item.IsSelected && !item.IsSelectAll).ToList();
+
+                if (selectedItems.Count == 0)
+                {
+                    textBox.Text = "Search parameters...";
+                }
+                else if (selectedItems.Count == 1)
+                {
+                    textBox.Text = selectedItems.First().ParameterName;
+                }
+                else
+                {
+                    textBox.Text = $"{selectedItems.Count} parameters selected";
+                }
+
+                lvMEPInsulationParameters.ItemsSource = MEPInsulationParameterItems;
+            }
+        }
+
         // Properties to return selected parameters and families
         public List<string> SelectedCurtainWallParameterNames
         {
@@ -2092,6 +2591,18 @@ namespace test.Forms
             get
             {
                 return RaillingParameterItems
+                    .Where(item => item.IsSelected && !item.IsSelectAll)
+                    .Select(item => item.ParameterName)
+                    .ToList();
+            }
+        }
+
+        // MEP Insulation properties
+        public List<string> SelectedMEPInsulationParameterNames
+        {
+            get
+            {
+                return MEPInsulationParameterItems
                     .Where(item => item.IsSelected && !item.IsSelectAll)
                     .Select(item => item.ParameterName)
                     .ToList();
@@ -2173,6 +2684,17 @@ namespace test.Forms
         public bool IsRailSupportChecked
         {
             get { return (bool)cbxRailSupport.IsChecked; }
+        }
+
+        // MEP Insulation component selection properties
+        public bool IsPipeInsulationChecked
+        {
+            get { return (bool)cbxPipeInsulation.IsChecked; }
+        }
+
+        public bool IsDuctInsulationChecked
+        {
+            get { return (bool)cbxDuctInsulation.IsChecked; }
         }
     }
 
